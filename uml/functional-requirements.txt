@@ -1,0 +1,10 @@
+# Requisitos do Sistema
+
+## Requisitos Funcionais (RF)
+* **RF01:** Criar e autenticar usuários (Auth).
+* **RF02:** Listar produtos disponíveis no catálogo (Catálogo).
+* **RF03:** Fazer upload de imagens/anexos vinculados aos produtos (Catálogo).
+* **RF04:** Criar pedido consumindo o preço exato do produto no momento da compra (Pedidos).
+* **RF05:** Listar pedidos filtrando por status (Pedidos).
+* **RF06:** Consultar LLM para sugerir prioridade de atendimento do pedido criado (Pedidos).
+* **RF07:** Notificar o usuário via evento assíncrono quando o pedido for concluído (Mensageria/Auth).

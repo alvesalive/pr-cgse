@@ -1,0 +1,9 @@
+# Requisitos do Sistema
+
+## Requisitos Não Funcionais (RNF)
+* **RNF01:** FastAPI e React (Microfrontends).
+* **RNF02:** Bancos PostgreSQL separados fisicamente para cada contexto (Auth, Catálogo, Pedidos).
+* **RNF03:** Cache em memória com Redis na listagem de pedidos.
+* **RNF04:** Telemetria com New Relic (só na nuvem pública) e Microsoft Clarity (MFE operacional).
+* **RNF05:** Topologia de 3 redes Docker isoladas (`frontend`, `publica`, `soberana`).
+* **RNF06:** Seed automático de banco de dados para o catálogo na subida do container.
