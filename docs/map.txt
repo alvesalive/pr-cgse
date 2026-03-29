@@ -1,0 +1,13 @@
+/gestao-pedidos
+├── /mfe-shell             # Frontend React (Login, Layout Base)
+├── /mfe-pedidos           # Frontend React (Catálogo, Pedidos, Uploads)
+├── /svc-auth              # Backend FastAPI (Nuvem Soberana - Usuários)
+├── /svc-catalogo          # Backend FastAPI (Nuvem Pública - Produtos/MinIO)
+├── /svc-pedidos           # Backend FastAPI (Nuvem Pública - Pedidos/IA)
+├── /infra
+│   └── nginx.conf         # API Gateway
+├── docker-compose.yml     # Orquestrador geral
+├── .env                   # Variáveis de ambiente (LLM Key)
+├── README.md              # Doc do projeto
+├── specs.md               # Doc para o Desenvolvedor/IA
+└── backlog.md             # Acompanhamento Ágil
