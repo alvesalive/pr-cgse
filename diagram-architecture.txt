@@ -1,0 +1,34 @@
+graph TD
+    Client([Cliente]) -->|HTTPS| Gateway[API Gateway - Nginx]
+    
+    subgraph rede_frontend [Rede Frontend - DMZ]
+        Gateway
+        MFE_Shell[MFE Shell - Auth]
+        MFE_Pedidos["MFE Pedidos & Catálogo + MS Clarity [strict mask]"]
+    end
+    Gateway --> MFE_Shell & MFE_Pedidos
+
+    subgraph rede_backend_publica [Rede Pública - Operacional]
+        Gateway -->|/api/pedidos| SVC_Pedidos[SVC Pedidos + New Relic]
+        Gateway -->|/api/catalogo| SVC_Catalogo[SVC Catálogo]
+        
+        SVC_Pedidos -->|Cache| Redis[(Redis)]
+        SVC_Pedidos -->|DB| DB_Pedidos[(PG - Pedidos)]
+        
+        SVC_Catalogo -->|DB| DB_Catalogo[(PG - Catálogo)]
+        SVC_Catalogo -->|Storage| MinIO[MinIO - Imagens]
+        
+        SVC_Pedidos -->|"Busca Preço (Rest/Http)"| SVC_Catalogo
+        SVC_Pedidos -.->|Evento Conclusão| Broker[[RabbitMQ]]
+    end
+
+    subgraph rede_backend_soberana [Rede Soberana - Dados PII]
+        Gateway -->|/api/auth| SVC_Auth[SVC Auth]
+        SVC_Auth -->|DB| DB_Soberano[(PG - Auth)]
+        Broker -.->|Consome Evento| SVC_Auth
+    end
+
+    SVC_Pedidos -->|Prompt Anônimo| LLM((API LLM))
+    
+    classDef isolada fill:#f9d0c4,stroke:#333; 
+    class rede_backend_soberana isolada;
