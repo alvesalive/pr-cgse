@@ -1,0 +1,38 @@
+erDiagram
+    %% db-soberano
+    USER {
+        uuid id PK
+        string nome_completo
+        string email
+        string password_hash
+    }
+    
+    %% db-catalogo
+    PRODUCT {
+        uuid id PK
+        string nome
+        string descricao
+        float preco_atual
+        string anexo_url
+    }
+    
+    %% db-publico
+    ORDER {
+        uuid id PK
+        uuid user_uuid FK "Logica"
+        string status
+        float valor_total
+        string prioridade_ia
+    }
+    
+    ORDER_ITEM {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK "Logica"
+        int quantidade
+        float preco_unitario "Congelado na compra"
+    }
+    
+    ORDER ||--|{ ORDER_ITEM : "contém"
+    PRODUCT ||--o{ ORDER_ITEM : "referencia"
+    USER ||--o{ ORDER : "dono (via mensageria)"
