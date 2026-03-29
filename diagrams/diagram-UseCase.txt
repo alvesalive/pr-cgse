@@ -1,0 +1,36 @@
+flowchart LR
+    Operador([👤 Operador])
+    
+    subgraph Gestao_Acesso [Gestão de Acesso - Soberano]
+        UC_Login([Login])
+    end
+    
+    subgraph Catalogo [Catálogo - Público]
+        UC_Visualizar([Visualizar Produtos])
+        UC_Cadastrar([Cadastrar Produto e Foto])
+    end
+    
+    subgraph Operacao_Pedidos [Operação de Pedidos - Público]
+        UC_Criar([Criar Pedido])
+        UC_Atualizar([Atualizar Status])
+        UC_Listar([Listar Pedidos])
+    end
+    
+    subgraph Processos_Sistemicos [Processos Sistêmicos - Background]
+        UC_BuscarPreco([Buscar Preço no Catálogo])
+        UC_DefinirPrioridade([Definir Prioridade IA])
+        UC_DispararNotificacao([Disparar Notificação RabbitMQ])
+    end
+
+    %% Relacionamentos do Operador
+    Operador --> UC_Login
+    Operador --> UC_Visualizar
+    Operador --> UC_Cadastrar
+    Operador --> UC_Criar
+    Operador --> UC_Atualizar
+    Operador --> UC_Listar
+    
+    %% Relacionamentos Sistêmicos (Includes)
+    UC_Criar -. "<<include>>" .-> UC_BuscarPreco
+    UC_Criar -. "<<include>>" .-> UC_DefinirPrioridade
+    UC_Atualizar -. "<<include>>" .-> UC_DispararNotificacao
