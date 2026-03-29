@@ -4,12 +4,12 @@ Este documento gerencia as entregas do projeto. O desenvolvimento está dividido
 **Instrução para o Agente de IA:** Ao concluir uma tarefa, marque com um `[x]` e aguarde a validação antes de prosseguir para a próxima.
 
 ## 🚀 Sprint 1: Fundação e Infraestrutura (Base)
-- [ ] Criar a estrutura de diretórios do monorepo (`svc-auth`, `svc-catalogo`, `svc-pedidos`, `mfe-shell`, `mfe-pedidos`, `infra`).
-- [ ] Criar os arquivos `requirements.txt` para cada microsserviço conforme as especificações.
-- [ ] Configurar o arquivo `.env` base (contendo credenciais de banco, MinIO, RabbitMQ, chaves JWT, LLM e New Relic).
-- [ ] Criar o arquivo `infra/nginx.conf` mapeando os upstreams e rotas do API Gateway.
-- [ ] Criar o `docker-compose.yml` completo com as 3 redes (`rede_frontend`, `rede_backend_publica`, `rede_backend_soberana`), os 3 bancos PostgreSQL, Redis, RabbitMQ e MinIO (com o container `minio-setup`).
-- [ ] Subir a infraestrutura e validar se todos os containers ficam `healthy`.
+- [x] Criar a estrutura de diretórios do monorepo (`svc-auth`, `svc-catalogo`, `svc-pedidos`, `mfe-shell`, `mfe-pedidos`, `infra`).
+- [x] Criar os arquivos `requirements.txt` para cada microsserviço conforme as especificações.
+- [x] Configurar o arquivo `.env` base (contendo credenciais de banco, MinIO, RabbitMQ, chaves JWT, LLM e New Relic).
+- [x] Criar o arquivo `infra/nginx.conf` mapeando os upstreams e rotas do API Gateway.
+- [x] Criar o `docker-compose.yml` completo com as 3 redes (`rede_frontend`, `rede_backend_publica`, `rede_backend_soberana`), os 3 bancos PostgreSQL, Redis, RabbitMQ e MinIO (com o container `minio-setup`).
+- [x] Subir a infraestrutura e validar se todos os containers ficam `healthy`.
 
 ## 🛡️ Sprint 2: Microsserviço Soberano (Autenticação)
 - [ ] Configurar a base do FastAPI, conexão com SQLAlchemy e schemas Pydantic no `svc-auth`.
