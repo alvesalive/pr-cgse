@@ -1,5 +1,5 @@
 graph TD
-    Client([Cliente]) -->|HTTPS| Gateway[API Gateway - Nginx]
+    Client([Cliente]) -->|HTTP| Gateway[API Gateway - Nginx]
     
     subgraph rede_frontend [Rede Frontend - DMZ]
         Gateway
