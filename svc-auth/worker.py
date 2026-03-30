@@ -21,21 +21,33 @@ def callback(ch, method, properties, body):
     import json
     try:
         data = json.loads(body)
-        user_uuid = data.get("user_uuid")
-        pedido_id = data.get("pedido_id")
-        
+        user_uuid  = data.get("user_uuid")
+        pedido_id  = data.get("pedido_id")
+        event_type = data.get("type", "ORDER_CREATED")
+        status     = data.get("status", "")
+        total      = data.get("total", 0)
+
+        event_labels = {
+            "ORDER_CREATED": "CRIADO",
+            "ORDER_UPDATED": "ALTERADO",
+            "ORDER_DELETED": "CANCELADO/EXCLUÍDO",
+        }
+        label = event_labels.get(event_type, event_type)
+
         db = SessionLocal()
         user = db.query(User).filter(User.id == str(user_uuid)).first()
         db.close()
-        
+
         if user:
-            logger.info(f"Simulando envio de email para: {user.nome_completo} <{user.email}>")
-            logger.info(f"Assunto: Seu pedido {pedido_id} foi CONCLUIDO!")
+            logger.info(f"[RabbitMQ] Evento: {event_type}")
+            logger.info(f"[RabbitMQ] Para: {user.nome_completo} <{user.email}>")
+            logger.info(f"[RabbitMQ] Pedido {pedido_id} foi {label} | Status: {status} | Total: R$ {total:.2f}")
         else:
-            logger.warning(f"Usuario com UUID '{user_uuid}' não encontrado para o pedido {pedido_id}.")
-            
+            logger.warning(f"[RabbitMQ] Usuario UUID '{user_uuid}' nao encontrado para o pedido {pedido_id}.")
+
     except Exception as e:
-        logger.error(f"Falha ao processar a notificação: {e}")
+        logger.error(f"Falha ao processar a notificacao: {e}")
+
 
 def run_worker():
     parameters = pika.URLParameters(RABBITMQ_URL)

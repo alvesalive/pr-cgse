@@ -6,6 +6,9 @@ export default function PedidosList({ refreshTrigger }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmarExclusaoId, setConfirmarExclusaoId] = useState(null);
+  const [editandoId, setEditandoId] = useState(null);
+  const [editQuantidades, setEditQuantidades] = useState({});
+  const [editLoading, setEditLoading] = useState(false);
   const pollingRef = useRef(null);
 
   const fetchPedidos = (silent = false) => {
@@ -44,6 +47,56 @@ export default function PedidosList({ refreshTrigger }) {
     } catch (err) {
       setError(err.response?.data?.detail || 'Erro ao excluir pedido.');
       setConfirmarExclusaoId(null);
+    }
+  };
+
+  const handleAbrirEdicao = (ped) => {
+    // Monta o mapa de quantidades a partir dos itens do pedido
+    const qtds = {};
+    (ped.items || []).forEach(it => { qtds[it.product_id] = it.quantity; });
+    setEditQuantidades(qtds);
+    setEditandoId(ped.id);
+    setConfirmarExclusaoId(null);
+  };
+
+  const handleEditarQuantidade = (productId, delta) => {
+    setEditQuantidades(prev => {
+      const atual = prev[productId] || 0;
+      const novo = atual + delta;
+      if (novo <= 0) {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      }
+      return { ...prev, [productId]: novo };
+    });
+  };
+
+  const handleSalvarEdicao = async (pedidoId) => {
+    const token = localStorage.getItem('token');
+    const items = Object.entries(editQuantidades).map(([product_id, quantity]) => ({
+      product_id,
+      quantity
+    }));
+
+    if (items.length === 0) {
+      setError('O pedido precisa ter ao menos 1 item. Para remover, use Excluir.');
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      await axios.put(`/api/pedidos/${pedidoId}`, { items }, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 60000
+      });
+      setEditandoId(null);
+      setEditQuantidades({});
+      fetchPedidos();
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Erro ao atualizar pedido.');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -97,7 +150,7 @@ export default function PedidosList({ refreshTrigger }) {
       <div className="icon"><i className="fas fa-times-circle fa-lg"></i></div>
       <div className="content"><span className="message-body">{error}</span></div>
       <div className="close">
-        <button className="br-button circle small" type="button" onClick={() => fetchPedidos()}>
+        <button className="br-button circle small" type="button" onClick={() => { setError(''); fetchPedidos(); }}>
           <i className="fas fa-redo"></i>
         </button>
       </div>
@@ -126,6 +179,7 @@ export default function PedidosList({ refreshTrigger }) {
         </thead>
         <tbody>
           {pedidos.map(ped => {
+            const emEdicao = editandoId === ped.id;
             return (
               <tr key={ped.id}>
                 <td data-th="Data / ID">
@@ -164,27 +218,89 @@ export default function PedidosList({ refreshTrigger }) {
                   R$ {(ped.total_amount || 0).toFixed(2)}
                 </td>
                 <td data-th="Itens">
-                  {(ped.items || []).map(it => (
-                    <div key={it.id}>{it.quantity}x {it.product_name}</div>
-                  ))}
+                  {/* Modo edição: mostra controles de quantidade por item */}
+                  {emEdicao ? (
+                    <div style={{ minWidth: '220px' }}>
+                      {(ped.items || []).map(it => (
+                        <div key={it.product_id} className="d-flex align-items-center mb-1" style={{ gap: '6px' }}>
+                          <button
+                            className="br-button circle small"
+                            type="button"
+                            onClick={() => handleEditarQuantidade(it.product_id, -1)}
+                          >
+                            <i className="fas fa-minus"></i>
+                          </button>
+                          <span style={{ minWidth: '18px', textAlign: 'center' }}>
+                            {editQuantidades[it.product_id] ?? 0}
+                          </span>
+                          <button
+                            className="br-button circle small"
+                            type="button"
+                            onClick={() => handleEditarQuantidade(it.product_id, +1)}
+                          >
+                            <i className="fas fa-plus"></i>
+                          </button>
+                          <span className="small ml-1">{it.product_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    (ped.items || []).map(it => (
+                      <div key={it.id}>{it.quantity}x {it.product_name}</div>
+                    ))
+                  )}
                 </td>
                 <td data-th="Ações">
-                  {confirmarExclusaoId === ped.id ? (
-                    <div className="d-flex align-items-center" style={{gap: '5px', padding: '4px', backgroundColor: '#fff3f3', borderRadius: '4px', border: '1px solid #f5c2c7'}}>
+                  {/* Modo edição: botões Salvar / Cancelar */}
+                  {emEdicao ? (
+                    <div className="d-flex align-items-center" style={{ gap: '5px', flexWrap: 'wrap' }}>
+                      <button
+                        className="br-button success small"
+                        type="button"
+                        onClick={() => handleSalvarEdicao(ped.id)}
+                        disabled={editLoading}
+                      >
+                        {editLoading
+                          ? <i className="fas fa-spinner fa-spin"></i>
+                          : <><i className="fas fa-save mr-1"></i>Salvar</>
+                        }
+                      </button>
+                      <button
+                        className="br-button secondary small"
+                        type="button"
+                        onClick={() => { setEditandoId(null); setEditQuantidades({}); }}
+                        disabled={editLoading}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : confirmarExclusaoId === ped.id ? (
+                    <div className="d-flex align-items-center" style={{ gap: '5px', padding: '4px', backgroundColor: '#fff3f3', borderRadius: '4px', border: '1px solid #f5c2c7' }}>
                       <span className="text-danger small font-weight-bold">Excluir?</span>
                       <button className="br-button danger small" onClick={() => handleExcluirPedido(ped.id)}>Sim</button>
                       <button className="br-button secondary small" onClick={() => setConfirmarExclusaoId(null)}>Não</button>
                     </div>
                   ) : (
-                    <button 
-                      className="br-button circle small" 
-                      type="button" 
-                      onClick={() => setConfirmarExclusaoId(ped.id)} 
-                      title="Excluir Pedido"
-                      disabled={ped.status === 'CANCELADO_EXCLUIDO'}
-                    >
-                      <i className="fas fa-trash text-danger"></i>
-                    </button>
+                    /* Ações padrão: Editar + Excluir */
+                    <div className="d-flex align-items-center" style={{ gap: '4px' }}>
+                      <button
+                        className="br-button circle small"
+                        type="button"
+                        onClick={() => handleAbrirEdicao(ped)}
+                        title="Editar Pedido"
+                        disabled={ped.risk_level === 'ANALISANDO'}
+                      >
+                        <i className="fas fa-edit text-primary"></i>
+                      </button>
+                      <button
+                        className="br-button circle small"
+                        type="button"
+                        onClick={() => { setConfirmarExclusaoId(ped.id); setEditandoId(null); }}
+                        title="Excluir Pedido"
+                      >
+                        <i className="fas fa-trash text-danger"></i>
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
