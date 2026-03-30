@@ -13,13 +13,7 @@ async def classify_risk(total_amount: float, items: list) -> str:
         f"- {item['quantity']}x {item['product_name']} a R$ {item['unit_price']:.2f}"
         for item in items
     )
-    prompt = (
-        f"Você é o RiskEngine do sistema governamental PR-CGSE. "
-        f"Analise este pedido público e responda SOMENTE UMA PALAVRA entre: BAIXO, MEDIO ou ALTO.\n\n"
-        f"Valor Total: R$ {total_amount:.2f}\n"
-        f"Itens:\n{prompt_lines}\n\n"
-        f"Resposta (apenas uma palavra):"
-    )
+    prompt = f"Responda apenas UMA PALAVRA (BAIXO, MEDIO ou ALTO). Risco do pedido R$ {total_amount:.2f}: {prompt_lines}"
 
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/models/"
@@ -28,36 +22,40 @@ async def classify_risk(total_amount: float, items: list) -> str:
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "maxOutputTokens": 10,
+            "maxOutputTokens": 100,
             "temperature": 0.1
         }
     }
 
-    max_retries = 5
-    base_delay = 5.0
+    max_retries = 2
+    base_delay = 45.0
 
     for attempt in range(max_retries):
         try:
-            print(f"[LLM] Chamando {GEMINI_MODEL} (Tentativa {attempt+1}/5)...")
-            async with httpx.AsyncClient() as client:
+            print(f"[LLM] Chamando {GEMINI_MODEL} (Tentativa {attempt+1}/2)...")
+            #No SSl para demonstracao da LLM (apenas nessa chamada)
+            async with httpx.AsyncClient(verify=False) as client:
                 resp = await client.post(url, json=payload, timeout=60.0)
                 resp.raise_for_status()
                 data = resp.json()
                 
-                if "candidates" in data and data["candidates"]:
-                    answer = data["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
-                    for valid in ["BAIXO", "MEDIO", "ALTO"]:
-                        if valid in answer:
-                            print(f"[LLM] Resultado: {valid}")
-                            return valid
+                # Parsing resiliente
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        answer = parts[0].get("text", "").strip().upper()
+                        for valid in ["BAIXO", "MEDIO", "ALTO"]:
+                            if valid in answer:
+                                print(f"[LLM] Resultado: {valid}")
+                                return valid
                 
                 print(f"[LLM] Resposta inesperada: {data}")
         except (httpx.TimeoutException, httpx.RequestError) as e:
             print(f"[LLM] Erro de rede/API: {e}")
             if attempt < max_retries - 1:
-                sleep_time = base_delay * (2 ** attempt)
-                print(f"[LLM] Aguardando {sleep_time}s para redefinir...")
-                await asyncio.sleep(sleep_time)
+                print(f"[LLM] Aguardando {base_delay}s para redefinir...")
+                await asyncio.sleep(base_delay)
             else:
                 return "TIMEOUT"
         except Exception as e:
