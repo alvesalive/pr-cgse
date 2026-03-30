@@ -12,12 +12,12 @@ Este documento gerencia as entregas do projeto. O desenvolvimento está dividido
 - [x] Subir a infraestrutura e validar se todos os containers ficam `healthy`.
 
 ## 🛡️ Sprint 2: Microsserviço Soberano (Autenticação)
-- [ ] Configurar a base do FastAPI, conexão com SQLAlchemy e schemas Pydantic no `svc-auth`.
-- [ ] Criar o modelo de banco de dados `User` (id, nome_completo, email, password_hash).
-- [ ] Implementar o endpoint `POST /api/auth/register` (com hash bcrypt).
-- [ ] Implementar o endpoint `POST /api/auth/login` retornando o JWT apenas com o `sub` (UUID do usuário).
-- [ ] Implementar a rotina de *Background Task* com a biblioteca `pika` para escutar a fila `notificacoes_pedidos` no RabbitMQ, buscar o usuário no banco e imprimir um log simulando o envio de e-mail.
-- [ ] Testar a subida do container `svc-auth` via Docker.
+- [x] Configurar a base do FastAPI, conexão com SQLAlchemy e schemas Pydantic no `svc-auth`.
+- [x] Criar o modelo de banco de dados `User` (id, nome_completo, email, password_hash).
+- [x] Implementar o endpoint `POST /api/auth/register` (com hash bcrypt).
+- [x] Implementar o endpoint `POST /api/auth/login` retornando o JWT apenas com o `sub` (UUID do usuário).
+- [x] Implementar a rotina de *Background Task* com a biblioteca `pika` para escutar a fila `notificacoes_pedidos` no RabbitMQ, buscar o usuário no banco e imprimir um log simulando o envio de e-mail.
+- [x] Testar a subida do container `svc-auth` via Docker.
 
 ## 📦 Sprint 3: Microsserviço de Catálogo (Público)
 - [ ] Configurar a base do FastAPI, SQLAlchemy e Pydantic no `svc-catalogo`.
