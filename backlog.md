@@ -20,12 +20,12 @@ Este documento gerencia as entregas do projeto. O desenvolvimento está dividido
 - [x] Testar a subida do container `svc-auth` via Docker.
 
 ## 📦 Sprint 3: Microsserviço de Catálogo (Público)
-- [ ] Configurar a base do FastAPI, SQLAlchemy e Pydantic no `svc-catalogo`.
-- [ ] Criar o modelo de banco `Product` (id, nome, descricao, preco_atual, anexo_url).
-- [ ] Implementar a conexão com o MinIO usando `minio-python`.
-- [ ] Implementar endpoints: `GET /api/catalogo/produtos` e `POST /api/catalogo/produtos/{id}/imagem` (upload para MinIO).
-- [ ] Criar o script `seed.py` que insere 3 produtos iniciais na base (ex: Laptop, Monitor, Cadeira) caso a tabela esteja vazia.
-- [ ] Testar a subida do container `svc-catalogo` e verificar o log do seed.
+- [x] Configurar a base do FastAPI, SQLAlchemy e Pydantic no `svc-catalogo`.
+- [x] Criar o modelo de banco `Product` (id, nome, descricao, preco_atual, anexo_url).
+- [x] Implementar a conexão com o MinIO usando `minio-python`.
+- [x] Implementar endpoints: `GET /api/catalogo/produtos` e `POST /api/catalogo/produtos/{id}/imagem` (upload para MinIO).
+- [x] Criar o script `seed.py` que insere 3 produtos iniciais na base (ex: Laptop, Monitor, Cadeira) caso a tabela esteja vazia.
+- [x] Testar a subida do container `svc-catalogo` e verificar o log do seed.
 
 ## 🛒 Sprint 4: Microsserviço de Pedidos (Público / Core)
 - [ ] Configurar base do FastAPI, SQLAlchemy e dependências de autenticação (validação do JWT) no `svc-pedidos`.
