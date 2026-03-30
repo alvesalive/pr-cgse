@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia código (stub initial)
 COPY . .
 
-# Comando de inicialização
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando de inicialização com New Relic APM wrapper
+CMD ["newrelic-admin", "run-program", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

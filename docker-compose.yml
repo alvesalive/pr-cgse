@@ -72,6 +72,21 @@ services:
       exit 0;
       "
 
+  newrelic-infra:
+    image: newrelic/infrastructure:latest
+    container_name: newrelic-infra
+    cap_add:
+      - SYS_PTRACE
+    privileged: true
+    pid: host
+    networks:
+      - rede_backend_publica
+    volumes:
+      - "/:/host:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - NRIA_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
+
   # ================= MICROSSERVIÇOS BACKEND =================
   svc-auth:
     build: ./svc-auth
