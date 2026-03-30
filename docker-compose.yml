@@ -8,9 +8,9 @@ services:
       POSTGRES_USER: admin_soberano
       POSTGRES_PASSWORD: pwd_soberano
       POSTGRES_DB: auth_db
-    networks: [rede_backend_soberana]
+    networks: [ rede_backend_soberana ]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin_soberano -d auth_db"]
+      test: [ "CMD-SHELL", "pg_isready -U admin_soberano -d auth_db" ]
       interval: 5s
 
   db-publico:
@@ -19,9 +19,9 @@ services:
       POSTGRES_USER: admin_publico
       POSTGRES_PASSWORD: pwd_publico
       POSTGRES_DB: pedidos_db
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin_publico -d pedidos_db"]
+      test: [ "CMD-SHELL", "pg_isready -U admin_publico -d pedidos_db" ]
       interval: 5s
 
   db-catalogo:
@@ -30,21 +30,24 @@ services:
       POSTGRES_USER: admin_catalogo
       POSTGRES_PASSWORD: pwd_catalogo
       POSTGRES_DB: catalogo_db
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin_catalogo -d catalogo_db"]
+      test: [ "CMD-SHELL", "pg_isready -U admin_catalogo -d catalogo_db" ]
       interval: 5s
 
   # ================= INFRA (CACHE, BROKER, STORAGE) =================
   redis-cache:
     image: redis:7-alpine
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
 
   rabbitmq-broker:
     image: rabbitmq:3-management-alpine
-    networks: [rede_backend_publica, rede_backend_soberana]
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks: [ rede_backend_publica, rede_backend_soberana ]
     healthcheck:
       test: rabbitmq-diagnostics -q ping
 
@@ -53,24 +56,19 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: admin_minio
-      MINIO_ROOT_PASSWORD: senha_minio_segura
-    ports: ["9000:9000", "9001:9001"]
-    networks: [rede_backend_publica]
+      MINIO_ROOT_PASSWORD: pwd_minio
+    ports: [ "9000:9000", "9001:9001" ]
+    networks: [ rede_backend_publica ]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
 
   minio-setup:
     image: minio/mc
     depends_on:
       minio: { condition: service_healthy }
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 admin_minio senha_minio_segura;
-      /usr/bin/mc mb myminio/catalogo-imagens --ignore-existing;
-      /usr/bin/mc anonymous set download myminio/catalogo-imagens;
-      exit 0;
-      "
+      /bin/sh -c " /usr/bin/mc alias set myminio http://minio:9000 admin_minio pwd_minio; /usr/bin/mc mb myminio/catalogo-imagens --ignore-existing; /usr/bin/mc anonymous set download myminio/catalogo-imagens; exit 0; "
 
   newrelic-infra:
     image: newrelic/infrastructure:latest
@@ -90,7 +88,7 @@ services:
   # ================= MICROSSERVIÇOS BACKEND =================
   svc-auth:
     build: ./svc-auth
-    networks: [rede_backend_soberana]
+    networks: [ rede_backend_soberana ]
     depends_on:
       db-soberano: { condition: service_healthy }
       rabbitmq-broker: { condition: service_healthy }
@@ -101,7 +99,7 @@ services:
 
   svc-catalogo:
     build: ./svc-catalogo
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     depends_on:
       db-catalogo: { condition: service_healthy }
       minio: { condition: service_healthy }
@@ -109,7 +107,7 @@ services:
       - DATABASE_URL=postgresql://admin_catalogo:pwd_catalogo@db-catalogo:5432/catalogo_db
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=admin_minio
-      - MINIO_SECRET_KEY=senha_minio_segura
+      - MINIO_SECRET_KEY=pwd_minio
       - JWT_SECRET=${JWT_SECRET}
     command: >
       sh -c "python seed.py && uvicorn main:app --host 0.0.0.0 --port 8000"
@@ -117,7 +115,7 @@ services:
   svc-pedidos:
     build: ./svc-pedidos
     deploy: { replicas: 2 }
-    networks: [rede_backend_publica]
+    networks: [ rede_backend_publica ]
     depends_on:
       db-publico: { condition: service_healthy }
       redis-cache: { condition: service_healthy }
@@ -136,22 +134,22 @@ services:
   # ================= MICROFRONTENDS & GATEWAY =================
   mfe-shell:
     build: ./mfe-shell
-    networks: [rede_frontend]
+    networks: [ rede_frontend ]
 
   mfe-pedidos:
     build: ./mfe-pedidos
-    networks: [rede_frontend]
+    networks: [ rede_frontend ]
 
   api-gateway:
     image: nginx:alpine
-    ports: ["8080:80"]
+    ports: [ "8080:80" ]
     volumes:
       - ./infra/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - rede_frontend
       - rede_backend_publica
       - rede_backend_soberana
-    depends_on: [svc-auth, svc-catalogo, svc-pedidos, mfe-shell, mfe-pedidos]
+    depends_on: [ svc-auth, svc-catalogo, svc-pedidos, mfe-shell, mfe-pedidos ]
 
 networks:
   rede_frontend: { driver: bridge }

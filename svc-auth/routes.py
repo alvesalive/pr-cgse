@@ -12,10 +12,17 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="E-mail já está em uso.")
     
     hashed_pwd = auth.get_password_hash(user_in.password)
+    
+    # adm sample
+    num_users = db.query(models.User).count()
+    print(f"DEBUG: Contagem de usuários atual para registro: {num_users}")
+    role = "ADMIN" if num_users == 0 else "USER"
+
     user = models.User(
         nome_completo=user_in.nome_completo,
         email=user_in.email,
-        password_hash=hashed_pwd
+        password_hash=hashed_pwd,
+        role=role
     )
     db.add(user)
     db.commit()

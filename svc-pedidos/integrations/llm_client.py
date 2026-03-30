@@ -33,13 +33,14 @@ async def classify_risk(total_amount: float, items: list) -> str:
         }
     }
 
-    max_retries = 3
-    base_delay = 1.0
+    max_retries = 5
+    base_delay = 5.0
 
     for attempt in range(max_retries):
         try:
+            print(f"[LLM] Chamando {GEMINI_MODEL} (Tentativa {attempt+1}/5)...")
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, json=payload, timeout=20.0)
+                resp = await client.post(url, json=payload, timeout=60.0)
                 resp.raise_for_status()
                 data = resp.json()
                 
@@ -47,19 +48,23 @@ async def classify_risk(total_amount: float, items: list) -> str:
                     answer = data["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
                     for valid in ["BAIXO", "MEDIO", "ALTO"]:
                         if valid in answer:
+                            print(f"[LLM] Resultado: {valid}")
                             return valid
                 
                 print(f"[LLM] Resposta inesperada: {data}")
-                return "DESCONHECIDO"
         except (httpx.TimeoutException, httpx.RequestError) as e:
-            print(f"[LLM] Erro de rede (Tentativa {attempt + 1}/{max_retries}): {e}")
+            print(f"[LLM] Erro de rede/API: {e}")
             if attempt < max_retries - 1:
-                await asyncio.sleep(base_delay * (2 ** attempt)) # Exponential backoff
+                sleep_time = base_delay * (2 ** attempt)
+                print(f"[LLM] Aguardando {sleep_time}s para redefinir...")
+                await asyncio.sleep(sleep_time)
             else:
-                print("[LLM] Máximo de tentativas alcançado. Processamento falhou.")
                 return "TIMEOUT"
         except Exception as e:
-            print(f"[LLM] Erro Google AI Studio (Outro erro): {e}")
-            return "DESCONHECIDO"
+            print(f"[LLM] Erro critico Google AI: {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(base_delay)
+            else:
+                return "DESCONHECIDO"
             
     return "TIMEOUT"
