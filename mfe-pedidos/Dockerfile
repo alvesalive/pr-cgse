@@ -1,5 +1,8 @@
-# Imagem ultra leve para MFE Pedidos Stub
-FROM busybox:1.35
+FROM node:20-alpine
 WORKDIR /app
-COPY index.html .
-CMD ["httpd", "-f", "-p", "3001"]
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+EXPOSE 3001
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3001"]

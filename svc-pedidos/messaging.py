@@ -7,7 +7,7 @@ logger = logging.getLogger("messaging")
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq-broker:5672/")
 
-def publish_order_notification(user_uuid: str, order_id: str, status: str, total: float):
+def publish_order_notification(user_uuid: str, order_id: str, status: str, total: float, event_type: str = "ORDER_CREATED"):
     try:
         params = pika.URLParameters(RABBITMQ_URL)
         connection = pika.BlockingConnection(params)
@@ -17,7 +17,7 @@ def publish_order_notification(user_uuid: str, order_id: str, status: str, total
         channel.queue_declare(queue_name, durable=True)
         
         message = {
-            "type": "ORDER_CREATED",
+            "type": event_type,
             "user_uuid": str(user_uuid),
             "pedido_id": str(order_id),
             "status": status,

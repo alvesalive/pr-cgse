@@ -10,6 +10,11 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
+class ProductUpdate(BaseModel):
+    nome: Optional[str] = None
+    descricao: Optional[str] = None
+    preco_atual: Optional[float] = None
+
 class ProductResponse(ProductBase):
     id: UUID
     anexo_url: Optional[str] = None

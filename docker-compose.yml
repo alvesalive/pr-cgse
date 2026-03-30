@@ -96,7 +96,7 @@ services:
       rabbitmq-broker: { condition: service_healthy }
     environment:
       - DATABASE_URL=postgresql://admin_soberano:pwd_soberano@db-soberano:5432/auth_db
-      - JWT_SECRET=chave_secreta_jwt
+      - JWT_SECRET=${JWT_SECRET}
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq-broker:5672/
 
   svc-catalogo:
@@ -110,7 +110,7 @@ services:
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=admin_minio
       - MINIO_SECRET_KEY=senha_minio_segura
-      - JWT_SECRET=chave_secreta_jwt
+      - JWT_SECRET=${JWT_SECRET}
     command: >
       sh -c "python seed.py && uvicorn main:app --host 0.0.0.0 --port 8000"
 
@@ -128,7 +128,7 @@ services:
       - CATALOGO_API_URL=http://svc-catalogo:8000
       - REDIS_URL=redis://redis-cache:6379/0
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq-broker:5672/
-      - JWT_SECRET=chave_secreta_jwt
+      - JWT_SECRET=${JWT_SECRET}
       - LLM_API_KEY=${LLM_API_KEY}
       - NEW_RELIC_LICENSE_KEY=${NEW_RELIC_LICENSE_KEY}
       - NEW_RELIC_APP_NAME="GestaoPedidos-SvcPublico"

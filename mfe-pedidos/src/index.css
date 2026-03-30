@@ -1,0 +1,13 @@
+/* MFE Pedidos - CSS limpo sem bordas Vite */
+body { margin: 0; padding: 0; background: #f8f9fa; font-family: 'Rawline', 'Raleway', system-ui, sans-serif; }
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  text-align: left;
+  background: transparent;
+  box-sizing: border-box;
+}

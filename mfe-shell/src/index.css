@@ -1,0 +1,51 @@
+/* =============================================
+   Plataforma Soberana de Gestão de Pedidos
+   CSS Global - MFE Shell
+   ============================================= */
+
+:root {
+  --govbr-blue: #1351b4;
+  --govbr-blue-light: #2670e8;
+  --govbr-bg: #f8f9fa;
+  --govbr-border: #dee2e6;
+  --sans: 'Rawline', 'Raleway', system-ui, 'Segoe UI', sans-serif;
+
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  background: var(--govbr-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove o template padrão do Vite — sem bordas, sem largura fixa, tela toda */
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--govbr-bg);
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: none;           /* Remove as bordas pretas laterais do Vite */
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* O br-header do GOV.BR deve ocupar 100% */
+.br-header {
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Main area esticada */
+main.d-flex {
+  flex: 1;
+}

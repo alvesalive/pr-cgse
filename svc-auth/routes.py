@@ -22,7 +22,7 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(user)
     
     token = auth.create_access_token(subject=str(user.id))
-    return schemas.Token(access_token=token, token_type="bearer")
+    return schemas.Token(access_token=token, token_type="bearer", role=user.role)
 
 @router.post("/login", response_model=schemas.Token)
 def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -34,4 +34,4 @@ def login(user_in: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     
     token = auth.create_access_token(subject=str(user.id))
-    return schemas.Token(access_token=token, token_type="bearer")
+    return schemas.Token(access_token=token, token_type="bearer", role=user.role)
