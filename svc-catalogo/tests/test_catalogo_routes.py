@@ -1,6 +1,6 @@
 """
-Testes Unitários — svc-catalogo
-Estratégia: SQLite em memória + mock de MinIO
+Testes Unitarios — svc-catalogo
+Estrategia: SQLite em memoria + mocks de MinIO e svc-pedidos
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from main import app
 from database import Base, get_db
+from models import Product  # nome real da classe no models.py
 
 DATABASE_URL = "sqlite:///./test_catalogo.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -27,10 +28,16 @@ def override_get_db():
         db.close()
 
 
+def override_get_user():
+    return "user-test-uuid"
+
+
 @pytest.fixture(autouse=True)
 def setup_and_teardown():
     Base.metadata.create_all(bind=engine)
+    from auth import get_current_user_uuid
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user_uuid] = override_get_user
     yield
     Base.metadata.drop_all(bind=engine)
     app.dependency_overrides.clear()
@@ -38,56 +45,103 @@ def setup_and_teardown():
 
 client = TestClient(app)
 
-# Token JWT simulado para autenticação nos testes
-ADMIN_TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTEyMyIsImV4cCI6OTk5OTk5OTk5OSwicm9sZSI6IkFETUlOIn0.fake"
-USER_TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTQ1NiIsImV4cCI6OTk5OTk5OTk5OSwicm9sZSI6IlVTRVIifQ.fake"
 
+# ── TESTES DE SAÚDE ────────────────────────────────────────────
 
-def test_listar_produtos_retorna_lista_vazia():
-    """GET / deve retornar lista vazia quando não há produtos."""
+def test_health_check_retorna_ok():
+    """GET / deve retornar status ok."""
     resp = client.get("/")
     assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
+    assert resp.json()["status"] == "ok"
+
+
+# ── TESTES DE LISTAGEM ─────────────────────────────────────────
+
+def test_listar_produtos_retorna_lista_vazia():
+    """GET /produtos deve retornar lista vazia quando nao ha produtos."""
+    resp = client.get("/produtos")
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 def test_listar_produtos_com_dados():
-    """GET / deve retornar os produtos cadastrados."""
-    from models import Produto
+    """GET /produtos deve retornar os produtos cadastrados."""
     db = TestingSessionLocal()
-    db.add(Produto(
-        nome="Cadeira Ergonômica",
-        descricao="Cadeira de escritório",
-        preco=1500.00,
-        unidade="UN",
-        imagem_url="http://localhost/img.jpg"
+    db.add(Product(
+        nome="Cadeira Ergonomica",
+        descricao="Cadeira de escritorio",
+        preco_atual=1500.00,
     ))
     db.commit()
     db.close()
 
-    resp = client.get("/")
+    resp = client.get("/produtos")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert data[0]["nome"] == "Cadeira Ergonômica"
+    assert len(data) == 1
+    assert data[0]["nome"] == "Cadeira Ergonomica"
+
+
+# ── TESTES DE CRIAÇÃO ──────────────────────────────────────────
+
+def test_criar_produto_com_autenticacao():
+    """POST /produtos com autenticacao deve criar o produto."""
+    resp = client.post("/produtos", json={
+        "nome": "Monitor 4K",
+        "descricao": "Monitor ultra-wide",
+        "preco_atual": 3500.00
+    })
+    assert resp.status_code == 201
+    assert resp.json()["nome"] == "Monitor 4K"
 
 
 def test_criar_produto_sem_autenticacao_retorna_401():
-    """POST / sem token deve retornar 401 ou 403."""
-    resp = client.post("/", data={
-        "nome": "Produto Teste",
+    """POST /produtos sem token deve retornar 401."""
+    # Remove o override de autenticacao para esse teste
+    app.dependency_overrides.clear()
+    resp = client.post("/produtos", json={
+        "nome": "Produto Sem Auth",
         "descricao": "Desc",
-        "preco": "100.00",
-        "unidade": "UN"
+        "preco_atual": 100.00
     })
-    assert resp.status_code in [401, 403, 422]
+    assert resp.status_code in [401, 403]
+
+
+# ── TESTES DE DELECAO ──────────────────────────────────────────
+
+@patch("httpx.get")
+def test_deletar_produto_sem_pedido_retorna_204(mock_httpx):
+    """DELETE produto que nao esta em pedido deve retornar 204."""
+    mock_httpx.return_value = MagicMock(status_code=200, json=lambda: {"exists": False})
+
+    db = TestingSessionLocal()
+    p = Product(nome="Para Deletar", descricao="Teste", preco_atual=10.00)
+    db.add(p)
+    db.commit()
+    produto_id = str(p.id)
+    db.close()
+
+    resp = client.delete(f"/produtos/{produto_id}")
+    assert resp.status_code == 204
+
+
+@patch("httpx.get")
+def test_deletar_produto_em_pedido_retorna_400(mock_httpx):
+    """DELETE produto que esta em pedido deve retornar 400."""
+    mock_httpx.return_value = MagicMock(status_code=200, json=lambda: {"exists": True})
+
+    db = TestingSessionLocal()
+    p = Product(nome="Em Pedido", descricao="Nao pode deletar", preco_atual=50.00)
+    db.add(p)
+    db.commit()
+    produto_id = str(p.id)
+    db.close()
+
+    resp = client.delete(f"/produtos/{produto_id}")
+    assert resp.status_code == 400
 
 
 def test_deletar_produto_inexistente_retorna_404():
-    """DELETE com ID inválido deve retornar 404."""
-    from auth import create_access_token
-    token = create_access_token(subject="admin-uuid", role="ADMIN")
-    resp = client.delete(
-        "/00000000-0000-0000-0000-000000000000",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    assert resp.status_code in [404, 403, 401, 422]
+    """DELETE com ID invalido deve retornar 404."""
+    resp = client.delete("/produtos/00000000-0000-0000-0000-000000000000")
+    assert resp.status_code == 404
