@@ -3,7 +3,7 @@ import httpx
 import asyncio
 
 GEMINI_API_KEY = os.getenv("LLM_API_KEY", "")
-GEMINI_MODEL = "gemini-3.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 async def classify_risk(total_amount: float, items: list) -> str:
     if not GEMINI_API_KEY:
