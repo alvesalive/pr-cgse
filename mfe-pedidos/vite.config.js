@@ -10,7 +10,7 @@ export default defineConfig({
       name: 'pedidos_app',
       filename: 'remoteEntry.js',
       exposes: {
-        './Dashboard': './src/App.jsx', // Vamos exportar a tela App principal como Dashboard
+        './Dashboard': './src/App.jsx',
       },
       shared: ['react', 'react-dom']
     })
@@ -30,5 +30,11 @@ export default defineConfig({
     target: 'esnext',
     minify: false,
     cssCodeSplit: false
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
   }
 })
+

@@ -8,7 +8,6 @@ export default defineConfig({
     federation({
       name: 'shell_app',
       remotes: {
-        // Aponta para a string que o NGINX roteia. Se rodar local fora do docker: 'http://localhost:3001/pedidos-app/assets/remoteEntry.js'
         pedidos_app: '/pedidos-app/assets/remoteEntry.js'
       },
       shared: ['react', 'react-dom', 'react-router-dom']
@@ -29,5 +28,11 @@ export default defineConfig({
     target: 'esnext',
     minify: false,
     cssCodeSplit: false
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
   }
 })
+

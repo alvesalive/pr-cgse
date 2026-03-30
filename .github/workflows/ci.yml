@@ -1,0 +1,94 @@
+name: CI — Testes Automatizados
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # BACKEND PYTHON
+  # ─────────────────────────────────────────────
+  test-svc-auth:
+    name: "🔐 Testes svc-auth"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependências
+        run: |
+          pip install fastapi==0.110.0 sqlalchemy==2.0.29 pydantic==2.6.4 \
+                      python-jose[cryptography]==3.3.0 passlib[bcrypt] \
+                      pytest==8.1.1 pytest-asyncio==0.23.6 httpx==0.27.0
+      - name: Rodar testes
+        run: pytest svc-auth/tests/ -v
+
+  test-svc-catalogo:
+    name: "📦 Testes svc-catalogo"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependências
+        run: |
+          pip install fastapi==0.110.0 sqlalchemy==2.0.29 pydantic==2.6.4 \
+                      python-jose[cryptography]==3.3.0 passlib[bcrypt] \
+                      pytest==8.1.1 pytest-asyncio==0.23.6 httpx==0.27.0 \
+                      python-multipart minio
+      - name: Rodar testes
+        run: pytest svc-catalogo/tests/ -v
+
+  test-svc-pedidos:
+    name: "📋 Testes svc-pedidos"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependências
+        run: |
+          pip install fastapi==0.110.0 sqlalchemy==2.0.29 pydantic==2.6.4 \
+                      python-jose[cryptography]==3.3.0 passlib[bcrypt] \
+                      pytest==8.1.1 pytest-asyncio==0.23.6 httpx==0.27.0 \
+                      pika==1.3.2 redis==5.0.3
+      - name: Rodar testes
+        run: pytest svc-pedidos/tests/ -v
+
+  # ─────────────────────────────────────────────
+  # FRONTEND REACT
+  # ─────────────────────────────────────────────
+  test-mfe-shell:
+    name: "🐚 Testes mfe-shell"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mfe-shell/package-lock.json
+      - name: Instalar dependências
+        run: cd mfe-shell && npm ci
+      - name: Rodar testes
+        run: cd mfe-shell && npm test -- --run
+
+  test-mfe-pedidos:
+    name: "🛒 Testes mfe-pedidos"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: mfe-pedidos/package-lock.json
+      - name: Instalar dependências
+        run: cd mfe-pedidos && npm ci
+      - name: Rodar testes
+        run: cd mfe-pedidos && npm test -- --run
