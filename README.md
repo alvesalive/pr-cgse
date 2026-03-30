@@ -1,5 +1,8 @@
 # Plataforma de Gestão de Pedidos Internos
 
+![Diagrama de Arquitetura](docs/diagram-architecture-image.png)
+
+
 Este projeto (MVP) visa modernizar o controle de pedidos internos corporativos, substituindo planilhas por uma arquitetura distribuída, segura e observável.
 
 ## Decisões de Arquitetura e Segurança (LGPD e Nuvem Soberana)
