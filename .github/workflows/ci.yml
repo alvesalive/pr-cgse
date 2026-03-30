@@ -94,7 +94,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: mfe-shell/package-lock.json
       - name: Instalar dependencias
-        run: cd mfe-shell && npm ci
+        run: cd mfe-shell && npm install --legacy-peer-deps
       - name: Rodar testes
         run: cd mfe-shell && npm test -- --run
 
@@ -109,6 +109,6 @@ jobs:
           cache: "npm"
           cache-dependency-path: mfe-pedidos/package-lock.json
       - name: Instalar dependencias
-        run: cd mfe-pedidos && npm ci
+        run: cd mfe-pedidos && npm install --legacy-peer-deps
       - name: Rodar testes
         run: cd mfe-pedidos && npm test -- --run
