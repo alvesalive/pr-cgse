@@ -1,38 +1,105 @@
-# Plataforma de Gestão de Pedidos Internos
+# Plataforma de Gestão de Pedidos Internos (PR-CGSE)
+
+Este projeto é uma plataforma distribuída, segura e observável para a gestão de pedidos internos, desenvolvida com foco em **Privacidade por Design (LGPD)** e **Nuvem Soberana**.
 
 ![Diagrama de Arquitetura](docs/diagram-architecture-image.png)
 
+---
 
-Este projeto (MVP) visa modernizar o controle de pedidos internos corporativos, substituindo planilhas por uma arquitetura distribuída, segura e observável.
+## Arquitetura e Segurança (Privacy by Design)
 
-## Decisões de Arquitetura e Segurança (LGPD e Nuvem Soberana)
-O sistema foi desenhado com foco estrito em segurança governamental/corporativa, implementando uma topologia de **três redes isoladas** no Docker (simulando uma DMZ e a segregação de dados):
+O sistema implementa uma topologia de **três redes isoladas** no Docker, garantindo que dados sensíveis nunca toquem a internet diretamente:
 
-* **DMZ / Rede Frontend:** Contém os Microfrontends (React) e o API Gateway (Nginx). É a única camada com portas expostas para o usuário final, filtrando e roteando as requisições.
-* **Nuvem Pública (Operacional):** Contém o `svc-catalogo` e o `svc-pedidos`. Opera os fluxos de negócio, cache e storage usando apenas UUIDs anônimos.
-* **Nuvem Soberana (Isolada):** Contém o `svc-auth` e o banco de usuários. Protege Dados Pessoais Identificáveis (PII). Não possui rota de rede para a DMZ ou para a internet, sendo acessível apenas internamente via API Gateway para autenticação ou via mensageria para rotinas em background.
+1.  **DMZ / Rede Frontend**: Contém os Microfrontends (React) e o API Gateway (Nginx). É a única camada com porta exposta (8080).
+2.  **Nuvem Pública (Operacional)**: Contém o `svc-catalogo`, `svc-pedidos`, Redis e MinIO. Opera fluxos de negócio usando apenas **UUIDs anônimos**.
+3.  **Nuvem Soberana (Isolada)**: Contém o `svc-auth` e o banco de usuários (PII). É uma rede `internal: true` sem rota para a internet, acessível apenas via Gateway para autenticação.
 
-* **Comunicação Inter-serviços (Padrões Híbridos):**
-  * **Síncrona (HTTP):** O `svc-pedidos` consulta o `svc-catalogo` em tempo real para obter o preço do produto no momento da compra.
-  * **Assíncrona (Eventos/RabbitMQ):** O `svc-pedidos` publica eventos de "Pedido Concluído". O `svc-auth` consome a fila para disparar notificações cruzando o UUID anônimo com o e-mail real.
-* **Observabilidade:** New Relic (APM) habilitado apenas nos serviços públicos. 
+---
 
-## Estratégia de Microfrontends e Analytics
-A interface foi dividida usando a abordagem de Module Federation (Vite + React) para garantir escalabilidade de times e isolamento de responsabilidades:
-* **MFE Shell (Host):** Responsável apenas pela casca da aplicação, roteamento e Autenticação (Login). Operando com dados sensíveis, ele **não possui** nenhum script de telemetria externa.
-* **MFE Pedidos (Remote):** Responsável pela operação do catálogo e gestão. Aqui implementamos o **Microsoft Clarity** para obter mapas de calor (heatmaps) e session replay.
-  * O Clarity foi configurado com **Strict Masking**. Isso garante que a Microsoft receba os dados de usabilidade (onde o usuário clica, se há atrito na tela), mas todos os textos, valores e números são substituídos por asteriscos no momento da gravação no navegador. O time de UX ganha métricas, e a instituição garante compliance com a LGPD.
+## Tecnologias e Bibliotecas
+
+### Backend (Python / FastAPI)
+- **FastAPI**: Framework de alta performance com tipagem estática.
+- **SQLAlchemy & Pydantic**: ORM e validação de dados (Fail-fast).
+- **Pika & RabbitMQ**: Mensageria assíncrona para notificações.
+- **Redis**: Camada de cache distribuído para pedidos.
+- **Httpx**: Comunicação síncrona entre microsserviços.
+- **MinIO**: Storage de objetos compatível com S3 para imagens do catálogo.
+- **Gemini 2.5 Flash**: IA generativa para classificação automática de risco de pedidos.
+
+### Frontend (React / Vite)
+- **React 19 & Vite**: Stack moderna para interfaces rápidas.
+- **Module Federation**: Arquitetura de Microfrontends (Shell + Remote).
+- **@govbr-ds/core**: Design System oficial do Governo Federal Brasileiro.
+- **Vitest & React Testing Library**: Testes unitários e de componentes.
+- **Microsoft Clarity**: Monitoramento de UX com *Strict Masking* para conformidade LGPD.
+
+### Observabilidade
+- **New Relic**: Monitoramento de performance (APM) e infraestrutura.
+- **Nginx API Gateway**: Centralização de rotas, load balancing e segurança.
+
+---
+
+## Documentação da API (Endpoints)
+
+Todas as requisições devem passar pelo Gateway (`http://localhost:8080`).
+
+### Autenticação (`/api/auth`)
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `POST` | `/register` | Cadastro de usuário (Primeiro = ADMIN). |
+| `POST` | `/login` | Autenticação e emissão de JWT. |
+
+### Gestão de Pedidos (`/api/pedidos`)
+*Requer JWT (exceto rotas internas).*
+
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/` | Lista pedidos do usuário logado. |
+| `POST` | `/` | Cria novo pedido (Trigger IA Risk Analysis). |
+| `GET` | `/{id}` | Detalhes do pedido (Cacheado no Redis). |
+| `PUT` | `/{id}` | Atualiza pedido e reavalia risco. |
+| `DELETE` | `/{id}` | Cancela pedido e notifica via RabbitMQ. |
+| `GET` | `/check-produto/{id}` | [Interno] Verifica se produto está em algum pedido. |
+
+### Catálogo de Produtos (`/api/catalogo`)
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/produtos` | Lista catálogo de bens. |
+| `POST` | `/produtos` | Cadastra novo produto (ADMIN). |
+| `PUT` | `/produtos/{id}` | Atualiza dados do produto (ADMIN). |
+| `DELETE` | `/produtos/{id}` | Remove produto se não houver pedidos (ADMIN). |
+| `POST` | `/produtos/{id}/imagem` | Upload de imagem para o MinIO. |
+
+---
 
 ## Como Executar
-1. Configure o `.env` (use o `.env.example`).
-2. Suba a stack: `docker-compose up --build -d` (O banco de catálogo já fará o *seed* inicial de produtos).
-3. Acesse a aplicação via API Gateway: `http://localhost:8080`.
 
-## Trade-offs
-Para manter o foco na entrega, algumas tecnologias foram intencionalmente deixadas de fora:
+1. **Configuração**: Copie o `.env.example` para `.env` e preencha as chaves da Google AI e New Relic.
+2. **Subir a Stack**:
+   ```bash
+   docker compose up -d --build
+   ```
+3. **Seed de Dados**: O banco do catálogo é populado automaticamente no primeiro boot.
 
-* **Kubernetes (K8s) Real:** Devido a complexidade e maiores exigencias de infraestrutura, optou-se por simular o comportamento do K8s (Namespaces e Liveness/Readiness Probes) diretamente no `docker-compose`.
+---
 
-* **Apache Kafka:** Embora seja o "padrão" para event-streaming, exige mais infraestrutura e complexidade. Para o escopo de disparar notificações assíncronas isoladas, o **RabbitMQ** oferece o padrão de mensageria (AMQP) com baixo consumo de recursos.
+## Testes
 
-* **BFF (Backend for Frontend) Customizado:** Em vez de construir um microsserviço dedicado apenas para agregar dados para o React, optou-se por usar o  Nginx como um API Gateway leve. 
+O projeto utiliza **SQLite em memória** para garantir testes rápidos, isolados e determinísticos.
+
+```bash
+# Backend (exemplo)
+docker compose exec svc-pedidos pytest
+
+# Frontend (exemplo)
+cd mfe-pedidos && npm test
+```
+
+---
+
+## Trade-offs e Decisões
+- **RabbitMQ vs Kafka**: Optou-se pelo RabbitMQ por ser mais leve e adequado para notificações unitárias (AMQP).
+- **Nginx Gateway**: Utilizado como um API Gateway leve em vez de um BFF customizado para reduzir a latência e complexidade.
+- **SQLite nos Testes**: Escolhido para agilizar o pipeline de CI/CD sem sacrificar a integridade das regras de negócio.
+- **Replica e Healthcheck**: Usa replicas e healthchecks para garantir a disponibilidade dos serviços e simulando um ambiente e recursos com k8s.
